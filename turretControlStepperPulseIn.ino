@@ -152,15 +152,15 @@ void loop()
 			
 		case 'e':
 
-			Serial.print("set direction forward");
-			SerialBT.print("set direction forward");
+			Serial.print("set direction backward");
+			SerialBT.print("set direction backward");
 			digitalWrite(stepperValveDirPin, HIGH);
 			break;
 
 		case 'f':
 
-			Serial.print("set direction backward");
-			SerialBT.print("set direction backward");
+			Serial.print("set direction Forward");
+			SerialBT.print("set direction Forward");
 			digitalWrite(stepperValveDirPin, LOW);
 			break;
 
