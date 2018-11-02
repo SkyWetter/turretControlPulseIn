@@ -1,13 +1,26 @@
 // **********   S * K * Y  |)  W * E * T *
 //  -=-=-=-=-=-=-=-=-=-=-=-=-
 // turret control firmware for esp32 dev kit C
-//  october 22, 2018
+//  october 31, 2018
 
 
 // *********   P R E P R O C E S S O R S
 #include <Stepper.h>
 #include <BluetoothSerial.h>
 #include <soc\rtc.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "sys/time.h"
+
+#include "sdkconfig.h"
+
+#define GPIO_INPUT_IO_TRIGGER     0  // There is the Button on GPIO 0
+
+#define GPIO_DEEP_SLEEP_DURATION     10  // sleep 30 seconds and then wake up
+
 
 
 // ********* P I N   A S S I G N M E N T S
@@ -77,13 +90,14 @@ byte hallSensorValveVal;
 double duration;
 
 // power		
-unsigned long currentSenseVal;	
-float solarPanelVoltageVal;									// VALUE READ FROM GPIO 3   OR ADC7
+unsigned long currentSenseVal;		
+float solarPanelVoltageVal;											// VALUE READ FROM GPIO 3   OR ADC7
 unsigned long qI, qII, qIII, qIV;									// values for quadrant average 
 
 // power management
 // RTC_DATA_ATTR int bootCount = 0;									// this will be saved in deep sleep memory (RTC mem apprently == 8k)
-
+RTC_DATA_ATTR static time_t last;									// remember last boot in RTC Memory
+struct timeval now;
 
 void setup()
 {
@@ -499,9 +513,16 @@ void inputCase()
 			case 's':
 				//esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 				esp_deep_sleep_start();
-			case 't':
-			rtc
+				break;
 
+			case 't':
+				gettimeofday(&now, NULL);
+
+				SerialBT.println(now.tv_sec);
+				SerialBT.println(last);
+
+				last = now.tv_sec;
+				break;
 
 		}
 }

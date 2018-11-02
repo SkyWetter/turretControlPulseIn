@@ -102,11 +102,6 @@
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="turretControlStepperPulseIn.ino">
-      <FileType>CppCode</FileType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="__vm\.turretControlStepperPulseIn.vsarduino.h" />
   </ItemGroup>
   <PropertyGroup>
