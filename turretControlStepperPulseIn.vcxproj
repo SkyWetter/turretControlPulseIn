@@ -102,12 +102,12 @@
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="__vm\.turretControlStepperPulseIn.vsarduino.h" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="turretControlStepperPulseIn.ino">
       <FileType>CppCode</FileType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="__vm\.turretControlStepperPulseIn.vsarduino.h" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
@@ -117,7 +117,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties arduino.upload.port="COM10" />
+      <UserProperties arduino.upload.port="COM14" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

@@ -129,4 +129,6 @@ C:\Users\andyk\AppData\Local\Temp\VMBuilds\turretControlStepperPulseIn\esp32_esp
  C:\Users\andyk\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.0\variants\esp32/pins_arduino.h \
  C:\arduino-1.6.11\libraries\Stepper\src/Stepper.h \
  C:\Users\andyk\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.0\libraries\BluetoothSerial\src/BluetoothSerial.h \
+ C:\Users\andyk\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.0/tools/sdk/include/soc/soc\rtc.h \
+ C:\Users\andyk\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.0/tools/sdk/include/newlib/sys/time.h \
  C:\Program\ Files\ (x86)\Microsoft\ Visual\ Studio\2017\Community\Common7\IDE\Extensions\pq0yofgn.yje\Micro\ Platforms\default\debuggers\VM_DBG/VM_DBG.h
