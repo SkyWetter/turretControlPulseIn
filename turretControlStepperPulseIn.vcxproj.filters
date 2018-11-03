@@ -18,6 +18,9 @@
     <ClInclude Include="__vm\.turretControlStepperPulseIn.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="__vm\.turretControlPulseIn.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="turretControlStepperPulseIn.ino" />

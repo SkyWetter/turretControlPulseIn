@@ -53,6 +53,14 @@
 #define currentSense A6
 #define solarPanelVoltage A7
 
+// states
+#define sleep 0
+#define solar 1
+#define program 2
+#define water 3
+#define lowPower 4
+
+int state = sleep;
 
 // ********    P R O T O T Y P E S
 void inputCase();
@@ -176,6 +184,72 @@ void loop()
 		inputCase();
 	}
 
+	//state machine
+
+	//interupt: if low battery from BMS -> state = lowPower
+	//interupt: if pushbutton depressed -> state = program
+
+	switch (state)
+	{
+		case sleep:
+		{
+			//shut down peripherals
+			//set wake up interupts for:
+				//hourly daytime -> state = solar
+				//AM/PM schedule -> state = water
+			//enter sleep mode
+
+			break;
+		}
+
+		case solar:
+		{
+			//open thread for current tracker
+			//run solar tracker program
+			
+			state = sleep;
+
+			break;
+		}
+
+		case program:
+		{
+			//open thread for bluetooth
+			//store incoming instructions in buffer
+			//one second spray for each square
+			//save full bed data
+			//return error checker
+			
+			state = sleep;
+
+			break;
+		}
+
+		case water:
+		{
+			//load correct instruction set for date and time
+			//reference temperature and apply modfifier to watering durations
+			//open thread for flow sensor
+			//run spray program
+
+			state = sleep;
+
+			break;
+		}
+
+		case lowPower:
+		{
+			//close the valve
+			//set LED to red
+			//allow solar
+			//prevent water until battery > 50%
+				//>50% -> perform last spray cycle
+			
+			state = sleep;
+
+			break;
+		}
+	}
 }
 
 void realTimeClock()
