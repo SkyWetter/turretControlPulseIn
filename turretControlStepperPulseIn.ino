@@ -510,7 +510,7 @@ void displaySolarCurrent()
 	SerialBT.println(currentSenseVal);
 }
 
-void displayPulseIn()
+void doPulseIn()
 {
 	//Pulse IN shit
 	for (int i = 0; i < 5; i++)
@@ -581,7 +581,7 @@ void inputCase()
 				break;
 
 			case 'h':
-				displayPulseIn();
+				doPulseIn();
 				break;
 
 			case 's':
