@@ -80,8 +80,6 @@ void stepperDomeDirCCW();
 void toggleStepperValveDir();
 void valveStepperOneStep();
 
-void evaluateCurrentSenseData();
-
 // ************* U S E R   D E F I N E D   V A R I A B L E S
 // bluetooth
 BluetoothSerial SerialBT;
@@ -98,9 +96,8 @@ byte hallSensorValveVal;
 double duration;
 
 // power		
-unsigned long currentSenseVal;		
+unsigned long currentSenseVal1, currentSenseVal2;		
 float solarPanelVoltageVal;											// VALUE READ FROM GPIO 3   OR ADC7
-unsigned long qI, qII, qIII, qIV;									// values for quadrant average 
 
 // power management
 // RTC_DATA_ATTR int bootCount = 0;									// this will be saved in deep sleep memory (RTC mem apprently == 8k)
@@ -259,117 +256,92 @@ void realTimeClock()
 // M A I N   F U N C T I O N   ---- SOLAR POWER TRACKING
 void solarPowerTracker()
 {
+	int peakInsolationSteps = 0;
+	long delayTimer1 = 0;
+	long delayTimer2 = 0;
+	bool delayComplete1 = false;
+	bool delayComplete2 = false;
 
-	//init solarPowerTracker function
-	currentSenseVal = 0;																	// value read from GPIO 34 or adc6
-	domeGoHome();																			// send dome to 0 posisition and set domeDir to CCW (increment) LOW ON PIN 19
-	delay(2000);
+	domeGoHome();			//set turret to zero (full ccw)
 	
+	delayTimer1 = millis();
 
-	// enter main process of function -- a for loop of 100 steps is a nested in a for loop of 4 quadrants which gives us a full rotation
-	for (int f = 0; f < 4; f++)
+	while (delayComplete1 == false)
 	{
-
-		if ( f > 0 )
+		if (delayTimer2 >= delayTimer1 + 2000)		//wait 2s for turret to complete rotation to zero
 		{
-			for (int i = 0; i < 100; i++)
-			{
+			delayComplete1 = true;		//reset timers
+			delayTimer1 = 0;
+			delayTimer2 = 0;
 
-				stepperDomeOneStepHalfPeriod(10);
+			currentSenseVal1 = analogRead(currentSense);
+			currentSenseVal2 = 0;		//set first reading value
+
+			stepperDomeDirCW();		//dir cw
+
+			for (int i = 1; i <= 200; i++)		//take 200 steps and measure current at each spot
+			{
+				for (int x = 0; x < 2; x++)		
+				{
+					stepperDomeOneStepHalfPeriod(10);
+				}
+
+				delayTimer1 = millis();	
+
+				while (delayTimer2 == false)
+				{
+					if (delayTimer2 >= delayTimer1 + 20)			//wait for steps to complete
+					{
+						delayComplete2 = true;
+						currentSenseVal2 = analogRead(currentSense);
+
+						if (currentSenseVal1 < currentSenseVal2)		//if new reading is that previous, save position
+						{
+							currentSenseVal1 = currentSenseVal2;
+							peakInsolationSteps = i * 2;
+							delayTimer1 = 0;
+							delayTimer2 = 0;
+						}
+					}
+
+					else
+					{
+						delayTimer2 = millis();
+					}
+				}
+
+				delayComplete2 = false;
+				delayTimer1 = millis();
+				delayTimer2 = 0;
+
+				stepperDomeDirCCW();		//dir ccw
+				for (int i = 0; i < 400 - peakInsolationSteps; i++)
+				{
+					stepperDomeOneStepHalfPeriod(10);
+				}
+
+				while (delayComplete2 == false)
+				{
+					if (delayTimer2 >= delayTimer1 + 2000)
+					{
+						delayComplete2 = true;
+					}
+					
+					else
+					{
+						delayTimer2 = millis();
+					}
+				}
 			}
 		}
 
-		delay(2);
-		currentSenseVal = analogRead(currentSense);											// read value from GPIO 34 or ADC6 to find Max Solar Power
-		delay(2);
-
-		delay(1000);
-		SerialBT.print("wait here before switch case(f): ");
-		SerialBT.println(f);
-
-		// average each currentSense val
-		switch (f)
+		else
 		{
-			case 0:
-				qI = currentSenseVal;														// average currentSenseVal over a 90degree(100steps) quadrant I
-				SerialBT.print("qI = ");
-				SerialBT.println(qI);
-				break;
-			case 1:
-				qII = currentSenseVal;														// average currentSenseVal over a 90degree(100steps) quadrant I
-				SerialBT.print("qII = ");
-				SerialBT.println(qII);
-				break;
-			case 2:
-				qIII = currentSenseVal;														// average currentSenseVal over a 90degree(100steps) quadrant I
-				SerialBT.print("qIII = ");
-				SerialBT.println(qIII);
-				break;
-			case 3:
-				qIV = currentSenseVal;														// average currentSenseVal over a 90degree(100steps) quadrant I
-				SerialBT.print("qIV = ");
-				SerialBT.println(qIV);
-				break;
-		}
-		currentSenseVal = 0;																// reset currentSenseVal to 0 before next switch statement loop
-
-	}//top of 0 to 3 for loop
-	
-	//evaluateCurrentSenseData();
-
-	SerialBT.println("evaluate current sense data...");
-
-	domeGoHome();
-
-	// evaluate data and goto quadrant
-	if ((qI > qII) && (qI > qIII) && (qI > qIV))											// goto 0 steps to q1
-	{
-		SerialBT.println("goto qI");
-	}
-
-	if ((qII > qI) && (qII > qIII) && (qII > qIV))											// goto 100 steps to q2
-	{
-		SerialBT.println("goto qII... ");
-		delay(50);
-		stepperDomeDirCCW();
-		for (int i = 0; i < 100; i++)
-		{
-			stepperDomeOneStepHalfPeriod(10);
+			delayTimer2 = millis();
 		}
 	}
-
-	if ((qIII > qI) && (qIII > qII) && (qIII > qIV))											// goto 200 steps to q3
-	{
-		SerialBT.println("goto qIII... ");
-		stepperDomeDirCCW();
-		delay(50);
-
-		for (int i = 0; i < 200; i++)
-		{
-			stepperDomeOneStepHalfPeriod(10);
-		}
-	}
-
-	if ((qIV > qI) && (qIV > qII) && (qIV > qIII))											// goto 300 steps to q4
-	{
-		SerialBT.println("goto qIV... ");
-		stepperDomeDirCCW();
-		delay(50);
-
-		for (int i = 0; i < 300; i++)
-		{
-			stepperDomeOneStepHalfPeriod(10);
-		}
-	}
-
 }
 
-
-// S U B  F U N C T I O N   ---- SOLAR POWER TRACKING -----> evaluate current sense data
-void evaluateCurrentSenseData()
-{
-	
-}
 
 
 // M A I N    F U N  C T I O N  --- STEPPER GO HOME
@@ -502,12 +474,12 @@ void displaySolarVoltage()
 
 void displaySolarCurrent()
 {
-	currentSenseVal = analogRead(currentSense);
+	currentSenseVal1 = analogRead(currentSense);
 
 	Serial.print("current val: ");
-	Serial.println(currentSenseVal);
+	Serial.println(currentSenseVal1);
 	SerialBT.print("current val: ");
-	SerialBT.println(currentSenseVal);
+	SerialBT.println(currentSenseVal1);
 }
 
 void doPulseIn()
@@ -522,7 +494,6 @@ void doPulseIn()
 	SerialBT.println(duration);
 
 }
-
 
 // M A I N   F U N C T I O N --- inputCase statement
 void inputCase()
