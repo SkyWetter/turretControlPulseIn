@@ -311,7 +311,7 @@ void solarPowerTracker()
 							delayTimer1 = 0;
 							delayTimer2 = 0;
 
-							Serial.printf("New highest reading reading is %i \n", currentSenseVal1);
+							Serial.printf("New highest reading is %i \n", currentSenseVal1);
 							Serial.printf("Position is %i steps from zero \n", peakInsolationSteps);
 						}
 					}
@@ -331,7 +331,6 @@ void solarPowerTracker()
 			delayComplete2 = false;		//reset timers
 			delayTimer1 = millis();
 			delayTimer2 = 0;
-
 			
 			for (int i = 0; i < 400 - peakInsolationSteps; i++)		//return to point of peak insolation
 			{
@@ -343,13 +342,14 @@ void solarPowerTracker()
 				if (delayTimer2 >= delayTimer1 + 2000)		//wait 2s to arrive, then exit function
 				{
 					delayComplete2 = true;
+
+					Serial.println("Exiting solar tracker");
 				}
 
 				else
 				{
 					delayTimer2 = millis();		//increment timer if limit not reached
 				}
-
 			}
 		}
 	}
