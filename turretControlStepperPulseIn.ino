@@ -96,7 +96,6 @@ byte hallSensorValveVal;
 double duration;
 
 // power		
-unsigned long currentSenseVal1, currentSenseVal2;		
 float solarPanelVoltageVal;											// VALUE READ FROM GPIO 3   OR ADC7
 
 // power management
@@ -201,8 +200,9 @@ void loop()
 
 		case solar:
 		{
-			//open thread for current tracker
 			//run solar tracker program
+
+			solarPowerTracker();
 			
 			state = sleep;
 
@@ -253,91 +253,104 @@ void realTimeClock()
 {
 
 }
+
 // M A I N   F U N C T I O N   ---- SOLAR POWER TRACKING
 void solarPowerTracker()
 {
 	int peakInsolationSteps = 0;
-	long delayTimer1 = 0;
-	long delayTimer2 = 0;
+	static int stepDivider = 2;		//sets number of steps between each measurement. Must divide evenly in to 400
+
+	long delayTimer1, delayTimer2;
+	long currentSenseVal1, currentSenseVal2;
+	
 	bool delayComplete1 = false;
 	bool delayComplete2 = false;
 
-	domeGoHome();			//set turret to zero (full ccw)
-	
-	delayTimer1 = millis();
 
-	while (delayComplete1 == false)
+	Serial.println("Solar tracking begins");
+
+	domeGoHome();			//send turret to zero position
+
+	while (delayComplete1 == false)	
 	{
-		if (delayTimer2 >= delayTimer1 + 2000)		//wait 2s for turret to complete rotation to zero
+		if (digitalRead(hallSensorDome) == HIGH)		//Wait until dome returns home -- CHECK IF ACTIVE HIGH
 		{
-			delayComplete1 = true;		//reset timers
-			delayTimer1 = 0;
+			Serial.println("Dome has returned to home");
+
+			delayComplete1 = true;		//end loop
+			delayTimer1 = 0;			//set timers
 			delayTimer2 = 0;
 
-			currentSenseVal1 = analogRead(currentSense);
-			currentSenseVal2 = 0;		//set first reading value
+			currentSenseVal1 = analogRead(currentSense);		//take first voltage reading at zero position
+			currentSenseVal2 = 0;
 
-			stepperDomeDirCW();		//dir cw
+			stepperDomeDirCW();		//set rotation to clockwise 
 
-			for (int i = 1; i <= 200; i++)		//take 200 steps and measure current at each spot
+			Serial.printf("First reading is %i \n", currentSenseVal1);
+
+			for (int i = 1; i <= 400 / stepDivider; i++)		//divide rotation in x number of steps
 			{
-				for (int x = 0; x < 2; x++)		
+				for (int x = 0; x < stepDivider; x++)
 				{
-					stepperDomeOneStepHalfPeriod(10);
+					stepperDomeOneStepHalfPeriod(10);		//take x steps
 				}
 
-				delayTimer1 = millis();	
+				delayTimer1 = millis();		//start timer
 
-				while (delayTimer2 == false)
+				while (delayComplete2 == false)
 				{
-					if (delayTimer2 >= delayTimer1 + 20)			//wait for steps to complete
+					if (delayTimer2 >= delayTimer1 + 10 * stepDivider)			//10ms delay per step
 					{
 						delayComplete2 = true;
-						currentSenseVal2 = analogRead(currentSense);
+						currentSenseVal2 = analogRead(currentSense);	//take next voltage reading
 
-						if (currentSenseVal1 < currentSenseVal2)		//if new reading is that previous, save position
+						if (currentSenseVal1 < currentSenseVal2)
 						{
-							currentSenseVal1 = currentSenseVal2;
-							peakInsolationSteps = i * 2;
+							currentSenseVal1 = currentSenseVal2;	//if it is greater, save new reading
+							peakInsolationSteps = i * stepDivider;		//number of steps taken to reach position
 							delayTimer1 = 0;
 							delayTimer2 = 0;
+
+							Serial.printf("New highest reading is %i \n", currentSenseVal1);
+							Serial.printf("Position is %i steps from zero \n", peakInsolationSteps);
 						}
 					}
 
 					else
 					{
-						delayTimer2 = millis();
-					}
-				}
-
-				delayComplete2 = false;
-				delayTimer1 = millis();
-				delayTimer2 = 0;
-
-				stepperDomeDirCCW();		//dir ccw
-				for (int i = 0; i < 400 - peakInsolationSteps; i++)
-				{
-					stepperDomeOneStepHalfPeriod(10);
-				}
-
-				while (delayComplete2 == false)
-				{
-					if (delayTimer2 >= delayTimer1 + 2000)
-					{
-						delayComplete2 = true;
-					}
-					
-					else
-					{
-						delayTimer2 = millis();
+						delayTimer2 = millis();		//increment timer if limit not reached
 					}
 				}
 			}
-		}
 
-		else
-		{
-			delayTimer2 = millis();
+			Serial.printf("Final highest reading reading is %i \n", currentSenseVal1);
+			Serial.printf("Final position is %i steps back from 400 \n", 400 - peakInsolationSteps);
+
+			stepperDomeDirCCW();		//set rotation to ccw
+			
+			delayComplete2 = false;		//reset timers
+			delayTimer1 = millis();
+			delayTimer2 = 0;
+			
+			for (int i = 0; i < 400 - peakInsolationSteps; i++)		//return to point of peak insolation
+			{
+				stepperDomeOneStepHalfPeriod(10);
+			}
+
+			while (delayComplete2 == false)
+			{
+				if (delayTimer2 >= delayTimer1 + 2000)		//wait 2s to arrive, then exit function
+				{
+					delayComplete2 = true;
+
+					Serial.println("Exiting solar tracker");
+				}
+
+				else
+				{
+					delayTimer2 = millis();		//increment timer if limit not reached
+				}
+			}
 		}
 	}
 }
@@ -474,6 +487,8 @@ void displaySolarVoltage()
 
 void displaySolarCurrent()
 {
+	long currentSenseVal1 = 0;
+
 	currentSenseVal1 = analogRead(currentSense);
 
 	Serial.print("current val: ");
